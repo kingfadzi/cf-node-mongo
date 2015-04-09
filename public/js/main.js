@@ -1,21 +1,15 @@
-
-var http = require('http');
-// Bring in the module providing the wrapper for cf env
-var cfenv = require('./cfenv-wrapper');
-// Initialize the cfenv wrapper
-var appEnv = cfenv.getAppEnv();
-
-
 var AppRouter = Backbone.Router.extend({
 
     routes: {
         ""                  : "home",
-        "wines"	: "list",
+        "wines"				: "list",
         "wines/page/:page"	: "list",
         "wines/add"         : "addWine",
         "wines/:id"         : "wineDetails",
         "about"             : "about",
-        "instance"	    : "instance"	
+        "instance"	    	: "instance",
+        "generate"          : "generate",
+        "kill"              : "kill"   	
     },
 
     initialize: function () {
@@ -61,15 +55,32 @@ var AppRouter = Backbone.Router.extend({
         $('#content').html(this.aboutView.el);
         this.headerView.selectMenuItem('about-menu');
     },
-    
-    instance: function () {
-        if (!this.instanceView) {
-            this.instanceView = new AboutView();
-        }
-        $('#content').html(this.instanceView.el);
-        this.headerView.selectMenuItem('about-menu');
-    }
 
+    instance: function () {
+        var appInstance = new Instance();
+        appInstance.fetch({success: function(){
+        	$("#content").html(new InstanceView({model: appInstance}).el);
+        }});
+        this.headerView.selectMenuItem();
+    },
+
+    generate: function(page) {
+      
+        var p = page ? parseInt(page, 10) : 1;
+        var generate = new Generate();
+        generate.fetch({success: function(){
+            $("#content").html(new WineListView({model: generate, page: p}).el);
+        }});
+        this.headerView.selectMenuItem('home-menu');
+    },
+
+     kill: function(page) {
+        var killer = new Killer();
+        killer.fetch({success: function(){
+            $("#content").html();
+        }});
+        
+    }
 
 });
 

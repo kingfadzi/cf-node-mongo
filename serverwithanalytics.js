@@ -41,6 +41,8 @@ app.post('/wines', wine.addWine);
 app.put('/wines/:id', wine.updateWine);
 app.delete('/wines/:id', wine.deleteWine);
 app.get('/instance', wine.instance);
+app.get('/generate', wine.generate);
+app.get('/kill', wine.kill);
 
 io.sockets.on('connection', function (socket) {
 

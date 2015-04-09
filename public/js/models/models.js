@@ -64,6 +64,8 @@ window.WineCollection = Backbone.Collection.extend({
 
 window.Instance = Backbone.Collection.extend({
 
+  url: "/instance",
+
   defaults: {
          port: "",
          vcapApplication: "",
@@ -71,4 +73,18 @@ window.Instance = Backbone.Collection.extend({
          vcapServices: ""
   }
                               
+});
+
+window.Generate = Backbone.Collection.extend({
+
+    model: Wine,
+
+    url: "/generate"
+
+});
+
+window.Killer = Backbone.Model.extend({
+
+    url: "/kill"
+
 });

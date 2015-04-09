@@ -8,7 +8,7 @@ var Server = mongo.Server,
     BSON = mongo.BSONPure;
 
 var vcap_services = JSON.parse(process.env.VCAP_SERVICES || '{}');
-var uri = vcap_services != undefined && vcap_services.mongolab != undefined ? vcap_services.mongolab[0].credentials.uri : 'localhost:27017/cf-workshop-node';
+var uri = vcap_services != undefined && vcap_services.mongolab != undefined ? vcap_services.mongolab[0].credentials.uri : 'mongodb://localhost:27017/cf-workshop-node';
 
 var uriObject = mongodbUri.parse(uri);
 
@@ -31,26 +31,42 @@ console.log(".. db: "+db);
 
 db.open(function(err, db) {
    
-    db.authenticate(username, password, function (err, val) {
+   if(username && password){
+        db.authenticate(username, password, function (err, val) {
                         console.log('### finished authenticating');
                         if (err) {
                              console.log('failed to authenticate.....');
                         } else {
                              console.log('yep.. authenticated.....');;
+
+
+
+
                         }
                  });
-
+    }
+    
     if(!err) {
         console.log("Connected to 'winedb' database");
-        db.collection('wines', {strict:true}, function(err, collection) {
-            console.log('### err: '+err);
-	    if (err) {
-                console.log("The 'wines' collection doesn't exist. Creating it with sample data...");
-                populateDB();
-            }else{
-		console.log('#### wines collection already exists...');	
-	    }	
-        });
+       
+        db.collection('wines', {strict:true}, function(errc, collection) {
+                        
+                        console.log("collection: "+errc);
+                        console.log("collection: "+collection);
+
+
+                        if(!errc) {
+                            console.log("Collection exists!");
+                        } else {
+                            console.log("Collection doesn't exist :(");
+                            db.createCollection("wines", function(err, collection){
+                                console.log("collection created...");
+                               
+                            });        
+                        }
+                    });
+
+   
     }
 });
 
@@ -121,17 +137,48 @@ exports.deleteWine = function(req, res) {
     });
 }
 
-exports.instance = function(req, res) {
-        console.log('... Getting environment variables ... ');    
- 	//var now = new Date();
-        //var port = process.env.PORT;
-        //var vcapApplication = JSON.parse(process.env.VCAP_APPLICATION || '{}');
-        //var vcapServices = process.env.VCAP_SERVICES;
-        //res.send({ 'now': now.toLocaleString(), 'port': port, 'vcapApplication': vcapApplication, 'vcapServices': vcapServices });
-        res.send( 'hello world' )
-}
+exports.instance = function ( req, res ){
+  	
+    console.log("req: "+JSON.stringify(req.body));
+
+	 var vcapApplication = JSON.parse(process.env.VCAP_APPLICATION || '{}');
+	 var vcapServices = process.env.VCAP_SERVICES;
+	 
+	 console.log("vcapApplication: "+vcapApplication);
+	 console.log("vcapServices: "+vcapServices);
+
+     
+    var settings = new Array();
+
+    settings.push(JSON.parse(process.env.VCAP_APPLICATION || '{}'));
+    settings.push(JSON.parse(process.env.VCAP_SERVICES || '{}'));
+
+     console.log("target: "+settings);
+
+     res.send( settings);
+  	 
+};
+
+exports.generate = function(req, res) {
+    
+    console.log("generating data..: ");
 
 
+    populateDB(); 
+
+    db.collection('wines', function(err, collection) {
+        collection.find().toArray(function(err, items) {
+            res.send(items);
+        });
+    });
+};
+
+exports.kill = function(req, res) {
+    
+    console.log("killing..: ");
+    process.exit(-1);
+   
+};
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 // Populate database with sample data -- Only used once: the first time the application is started.
@@ -139,93 +186,7 @@ exports.instance = function(req, res) {
 var populateDB = function() {
 
     var wines = [
-    {
-        name: "CHATEAU DE SAINT COSME",
-        year: "2009",
-        grapes: "Grenache / Syrah",
-        country: "France",
-        region: "Southern Rhone",
-        description: "The aromas of fruit and spice give one a hint of the light drinkability of this lovely wine, which makes an excellent complement to fish dishes.",
-        picture: "saint_cosme.jpg"
-    },
-    {
-        name: "LAN RIOJA CRIANZA",
-        year: "2006",
-        grapes: "Tempranillo",
-        country: "Spain",
-        region: "Rioja",
-        description: "A resurgence of interest in boutique vineyards has opened the door for this excellent foray into the dessert wine market. Light and bouncy, with a hint of black truffle, this wine will not fail to tickle the taste buds.",
-        picture: "lan_rioja.jpg"
-    },
-    {
-        name: "MARGERUM SYBARITE",
-        year: "2010",
-        grapes: "Sauvignon Blanc",
-        country: "USA",
-        region: "California Central Cosat",
-        description: "The cache of a fine Cabernet in ones wine cellar can now be replaced with a childishly playful wine bubbling over with tempting tastes of black cherry and licorice. This is a taste sure to transport you back in time.",
-        picture: "margerum.jpg"
-    },
-    {
-        name: "OWEN ROE \"EX UMBRIS\"",
-        year: "2009",
-        grapes: "Syrah",
-        country: "USA",
-        region: "Washington",
-        description: "A one-two punch of black pepper and jalapeno will send your senses reeling, as the orange essence snaps you back to reality. Don't miss this award-winning taste sensation.",
-        picture: "ex_umbris.jpg"
-    },
-    {
-        name: "REX HILL",
-        year: "2009",
-        grapes: "Pinot Noir",
-        country: "USA",
-        region: "Oregon",
-        description: "One cannot doubt that this will be the wine served at the Hollywood award shows, because it has undeniable star power. Be the first to catch the debut that everyone will be talking about tomorrow.",
-        picture: "rex_hill.jpg"
-    },
-    {
-        name: "VITICCIO CLASSICO RISERVA",
-        year: "2007",
-        grapes: "Sangiovese Merlot",
-        country: "Italy",
-        region: "Tuscany",
-        description: "Though soft and rounded in texture, the body of this wine is full and rich and oh-so-appealing. This delivery is even more impressive when one takes note of the tender tannins that leave the taste buds wholly satisfied.",
-        picture: "viticcio.jpg"
-    },
-    {
-        name: "CHATEAU LE DOYENNE",
-        year: "2005",
-        grapes: "Merlot",
-        country: "France",
-        region: "Bordeaux",
-        description: "Though dense and chewy, this wine does not overpower with its finely balanced depth and structure. It is a truly luxurious experience for the senses.",
-        picture: "le_doyenne.jpg"
-    },
-    {
-        name: "DOMAINE DU BOUSCAT",
-        year: "2009",
-        grapes: "Merlot",
-        country: "France",
-        region: "Bordeaux",
-        description: "The light golden color of this wine belies the bright flavor it holds. A true summer wine, it begs for a picnic lunch in a sun-soaked vineyard.",
-        picture: "bouscat.jpg"
-    },
-    {
-        name: "BLOCK NINE",
-        year: "2009",
-        grapes: "Pinot Noir",
-        country: "USA",
-        region: "California",
-        description: "With hints of ginger and spice, this wine makes an excellent complement to light appetizer and dessert fare for a holiday gathering.",
-        picture: "block_nine.jpg"
-    },
-    {
-        name: "DOMAINE SERENE",
-        year: "2007",
-        grapes: "Pinot Noir",
-        country: "USA",
-        region: "Oregon",
+    {                                                                                     
         description: "Though subtle in its complexities, this wine is sure to please a wide range of enthusiasts. Notes of pomegranate will delight as the nutty finish completes the picture of a fine sipping experience.",
         picture: "domaine_serene.jpg"
     },
